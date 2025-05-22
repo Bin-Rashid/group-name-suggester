@@ -1,0 +1,31 @@
+name: Update Names from Issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Read existing names
+        id: read
+        run: |
+          echo "names=$(cat names.json | jq -c .)" >> $GITHUB_OUTPUT
+
+      - name: Add new name from issue title
+        run: |
+          NAME="${{ github.event.issue.title }}"
+          jq ". + [\"$NAME\"]" names.json > names.tmp.json
+          mv names.tmp.json names.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add names.json
+          git commit -m "Add new name: ${{ github.event.issue.title }}"
+          git push
